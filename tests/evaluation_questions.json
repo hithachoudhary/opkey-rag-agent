@@ -1,0 +1,67 @@
+{
+    "test_suite": "Oracle Fusion Cloud Financials Implementation Benchmark",
+    "version": "1.0.0",
+    "metadata": {
+        "target_document": "oracle_financials_implementation_guide.pdf",
+        "total_questions": 5
+    },
+    "questions": [
+        {
+            "id": "EVAL_001",
+            "category": "High-Level Architecture",
+            "question": "What are the rapid implementation setups included for Oracle Financials Cloud?",
+            "expected_reference_page": 7,
+            "key_ground_truth_tokens": [
+                "Users",
+                "Enterprise structures",
+                "Bank, branches, and bank accounts",
+                "Tax",
+                "Ledgers",
+                "Business units"
+            ]
+        },
+        {
+            "id": "EVAL_002",
+            "category": "Product Offerings",
+            "question": "What components are delivered as part of the complete Oracle Financials solution?",
+            "expected_reference_page": 7,
+            "key_ground_truth_tokens": [
+                "General Ledger",
+                "Intercompany Accounting",
+                "Payables",
+                "Receivables",
+                "Payments",
+                "Cash Management"
+            ]
+        },
+        {
+            "id": "EVAL_003",
+            "category": "User Assistance",
+            "question": "How can users access help directly within the application pages if help icons aren't visible?",
+            "expected_reference_page": 5,
+            "key_ground_truth_tokens": [
+                "click your user image or name",
+                "global header",
+                "Show Help Icons"
+            ]
+        },
+        {
+            "id": "EVAL_004",
+            "category": "Community and Feedback",
+            "question": "What is the official email group address to send feedback regarding Oracle Applications user assistance?",
+            "expected_reference_page": 5,
+            "key_ground_truth_tokens": [
+                "oracle_fusion_applications_help_ww_grp@oracle.com"
+            ]
+        },
+        {
+            "id": "EVAL_005",
+            "category": "Training and Support",
+            "question": "Where should an implementation team go to increase their knowledge of Oracle Cloud via formal courses?",
+            "expected_reference_page": 5,
+            "key_ground_truth_tokens": [
+                "Oracle University"
+            ]
+        }
+    ]
+}

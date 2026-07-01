@@ -33,13 +33,11 @@ class ChunkingService:
                 semantic_units.append(line)
                 continue
                 
-            # If there's an active sentence, append this line with spacing
             if active_sentence:
                 active_sentence += " " + line
             else:
                 active_sentence = line
                 
-            # Seal sentence only if it ends with terminal punctuation
             if line.endswith(('.', '!', '?')):
                 semantic_units.append(active_sentence.strip())
                 active_sentence = ""
@@ -61,19 +59,21 @@ class ChunkingService:
         chunk_idx = 0
         
         for unit in semantic_units:
-            # Safe character length check of the prospective buffer array
+            # Check the length if we append this unit
             prospective_text = " ".join(current_buffer + [unit])
             
+            # If the block exceeds our ceiling constraint, seal it!
             if len(prospective_text) > chunk_size and current_buffer:
                 chunk_text = " ".join(current_buffer)
                 chunks.append(self._create_chunk_object(chunk_text, filename, page_number, chunk_idx))
                 chunk_idx += 1
                 
-                # Carry over last 2 complete structural lines/sentences for context overlap
+                # Carry over last 2 complete structural entries for semantic context overlap
                 current_buffer = current_buffer[-2:] if len(current_buffer) >= 2 else current_buffer
-                
+            
             current_buffer.append(unit)
             
+        # Flush the final block for the active page
         if current_buffer:
             chunk_text = " ".join(current_buffer)
             chunks.append(self._create_chunk_object(chunk_text, filename, page_number, chunk_idx))
