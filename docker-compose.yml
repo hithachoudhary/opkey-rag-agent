@@ -3,7 +3,7 @@ version: '3.8'
 services:
   api:
     build: .
-    container_name: opkey_rag_api
+    container_name: rag_agent_api
     ports:
       - "${PORT:-8000}:8000"
     volumes:
