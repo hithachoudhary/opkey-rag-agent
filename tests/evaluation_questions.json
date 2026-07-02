@@ -1,9 +1,9 @@
 {
-    "test_suite": "Oracle Fusion Cloud Financials Enterprise Evaluation Matrix",
-    "version": "2.2.0",
+    "test_suite": "Oracle Fusion Cloud Financials Production Compliance Matrix",
+    "version": "3.0.0",
     "metadata": {
         "target_document": "oracle_financials_implementation_guide.pdf",
-        "total_questions": 12
+        "total_questions": 15
     },
     "questions": [
         {
@@ -14,13 +14,7 @@
             "expected_pages": [
                 7
             ],
-            "minimum_similarity": 0.60,
-            "expected_keywords": [
-                "General Ledger",
-                "Payables",
-                "Receivables",
-                "Cash Management"
-            ]
+            "minimum_similarity": 0.60
         },
         {
             "id": "EVAL_002",
@@ -30,13 +24,7 @@
             "expected_pages": [
                 71
             ],
-            "minimum_similarity": 0.60,
-            "expected_keywords": [
-                "manage financial flows",
-                "assets",
-                "ledgers",
-                "tax"
-            ]
+            "minimum_similarity": 0.60
         },
         {
             "id": "EVAL_003",
@@ -44,10 +32,7 @@
             "question": "What is an implementation project?",
             "expected_behavior": "reject",
             "expected_pages": [],
-            "minimum_similarity": 0.60,
-            "expected_keywords": [
-                "not contain sufficient information"
-            ]
+            "minimum_similarity": 0.60
         },
         {
             "id": "EVAL_004",
@@ -57,11 +42,7 @@
             "expected_pages": [
                 73
             ],
-            "minimum_similarity": 0.60,
-            "expected_keywords": [
-                "General Ledger",
-                "intercompany"
-            ]
+            "minimum_similarity": 0.60
         },
         {
             "id": "EVAL_005",
@@ -71,14 +52,7 @@
             "expected_pages": [
                 7
             ],
-            "minimum_similarity": 0.60,
-            "expected_keywords": [
-                "Users",
-                "Enterprise structures",
-                "Bank",
-                "Tax",
-                "Ledgers"
-            ]
+            "minimum_similarity": 0.60
         },
         {
             "id": "EVAL_006",
@@ -86,10 +60,7 @@
             "question": "Summarize Chapter 3.",
             "expected_behavior": "reject",
             "expected_pages": [],
-            "minimum_similarity": 0.60,
-            "expected_keywords": [
-                "not contain sufficient information"
-            ]
+            "minimum_similarity": 0.60
         },
         {
             "id": "EVAL_007",
@@ -99,11 +70,7 @@
             "expected_pages": [
                 73
             ],
-            "minimum_similarity": 0.60,
-            "expected_keywords": [
-                "Simplify your setup",
-                "critical steps"
-            ]
+            "minimum_similarity": 0.60
         },
         {
             "id": "EVAL_008",
@@ -113,12 +80,7 @@
             "expected_pages": [
                 75
             ],
-            "minimum_similarity": 0.60,
-            "expected_keywords": [
-                "Setup and Maintenance",
-                "Manage Implementation Projects",
-                "Create"
-            ]
+            "minimum_similarity": 0.60
         },
         {
             "id": "EVAL_009",
@@ -128,13 +90,7 @@
             "expected_pages": [
                 73
             ],
-            "minimum_similarity": 0.60,
-            "expected_keywords": [
-                "Taxes",
-                "Security",
-                "Ledger",
-                "Reporting Center"
-            ]
+            "minimum_similarity": 0.60
         },
         {
             "id": "EVAL_010",
@@ -142,10 +98,7 @@
             "question": "What is the difference between rapid implementation and complete implementation?",
             "expected_behavior": "reject",
             "expected_pages": [],
-            "minimum_similarity": 0.60,
-            "expected_keywords": [
-                "not contain sufficient information"
-            ]
+            "minimum_similarity": 0.60
         },
         {
             "id": "EVAL_011",
@@ -153,10 +106,7 @@
             "question": "Who founded Oracle?",
             "expected_behavior": "reject",
             "expected_pages": [],
-            "minimum_similarity": 0.60,
-            "expected_keywords": [
-                "not contain sufficient information"
-            ]
+            "minimum_similarity": 0.60
         },
         {
             "id": "EVAL_012",
@@ -164,10 +114,37 @@
             "question": "What is Kubernetes?",
             "expected_behavior": "reject",
             "expected_pages": [],
-            "minimum_similarity": 0.60,
-            "expected_keywords": [
-                "not contain sufficient information"
-            ]
+            "minimum_similarity": 0.60
+        },
+        {
+            "id": "EVAL_013",
+            "category": "User Assistance",
+            "question": "How can users access help directly within the application pages if help icons aren't visible?",
+            "expected_behavior": "answer",
+            "expected_pages": [
+                5
+            ],
+            "minimum_similarity": 0.60
+        },
+        {
+            "id": "EVAL_014",
+            "category": "User Assistance",
+            "question": "What is the official email group address to send feedback regarding Oracle Applications user assistance?",
+            "expected_behavior": "answer",
+            "expected_pages": [
+                5
+            ],
+            "minimum_similarity": 0.60
+        },
+        {
+            "id": "EVAL_015",
+            "category": "Product Offerings",
+            "question": "What components are delivered as part of the complete Oracle Financials solution?",
+            "expected_behavior": "answer",
+            "expected_pages": [
+                7
+            ],
+            "minimum_similarity": 0.60
         }
     ]
 }

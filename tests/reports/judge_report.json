@@ -1,0 +1,192 @@
+{
+  "test_suite": "Oracle Fusion Cloud Financials Production Compliance Matrix",
+  "evaluation_mode": "judge",
+  "metrics": {
+    "hit_rate": "86.7%",
+    "average_faithfulness": 1.0,
+    "average_answer_relevance": 0.66,
+    "hallucination_rate": "0.0%"
+  },
+  "detailed_runs": [
+    {
+      "id": "EVAL_001",
+      "category": "Definitions",
+      "question": "What is Oracle Financials Cloud?",
+      "expected_behavior": "answer",
+      "status_returned": "success",
+      "judge_scores": {
+        "hit_rate_success": true,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0
+      }
+    },
+    {
+      "id": "EVAL_002",
+      "category": "Definitions",
+      "question": "What is the Financials Offering?",
+      "expected_behavior": "answer",
+      "status_returned": "success",
+      "judge_scores": {
+        "hit_rate_success": true,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0
+      }
+    },
+    {
+      "id": "EVAL_003",
+      "category": "Definitions",
+      "question": "What is an implementation project?",
+      "expected_behavior": "reject",
+      "status_returned": "insufficient_context",
+      "judge_scores": {
+        "hit_rate_success": true,
+        "faithfulness": 1.0,
+        "answer_relevance": 0.0
+      }
+    },
+    {
+      "id": "EVAL_004",
+      "category": "Definitions",
+      "question": "What is ledger configuration?",
+      "expected_behavior": "answer",
+      "status_returned": "success",
+      "judge_scores": {
+        "hit_rate_success": false,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0
+      }
+    },
+    {
+      "id": "EVAL_005",
+      "category": "Definitions",
+      "question": "What is rapid implementation?",
+      "expected_behavior": "answer",
+      "status_returned": "success",
+      "judge_scores": {
+        "hit_rate_success": false,
+        "faithfulness": 1.0,
+        "answer_relevance": 0.9
+      }
+    },
+    {
+      "id": "EVAL_006",
+      "category": "Summaries",
+      "question": "Summarize Chapter 3.",
+      "expected_behavior": "reject",
+      "status_returned": "insufficient_context",
+      "judge_scores": {
+        "hit_rate_success": true,
+        "faithfulness": 1.0,
+        "answer_relevance": 0.0
+      }
+    },
+    {
+      "id": "EVAL_007",
+      "category": "Summaries",
+      "question": "Explain the rapid implementation process.",
+      "expected_behavior": "answer",
+      "status_returned": "success",
+      "judge_scores": {
+        "hit_rate_success": true,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0
+      }
+    },
+    {
+      "id": "EVAL_008",
+      "category": "Procedural",
+      "question": "How do you create an implementation project?",
+      "expected_behavior": "answer",
+      "status_returned": "success",
+      "judge_scores": {
+        "hit_rate_success": true,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0
+      }
+    },
+    {
+      "id": "EVAL_009",
+      "category": "Procedural",
+      "question": "What are the steps involved in rapid implementation?",
+      "expected_behavior": "answer",
+      "status_returned": "success",
+      "judge_scores": {
+        "hit_rate_success": true,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0
+      }
+    },
+    {
+      "id": "EVAL_010",
+      "category": "Comparative",
+      "question": "What is the difference between rapid implementation and complete implementation?",
+      "expected_behavior": "reject",
+      "status_returned": "insufficient_context",
+      "judge_scores": {
+        "hit_rate_success": true,
+        "faithfulness": 1.0,
+        "answer_relevance": 0.0
+      }
+    },
+    {
+      "id": "EVAL_011",
+      "category": "Unsupported",
+      "question": "Who founded Oracle?",
+      "expected_behavior": "reject",
+      "status_returned": "insufficient_context",
+      "judge_scores": {
+        "hit_rate_success": true,
+        "faithfulness": 1.0,
+        "answer_relevance": 0.0
+      }
+    },
+    {
+      "id": "EVAL_012",
+      "category": "Unsupported",
+      "question": "What is Kubernetes?",
+      "expected_behavior": "reject",
+      "status_returned": "insufficient_context",
+      "judge_scores": {
+        "hit_rate_success": true,
+        "faithfulness": 1.0,
+        "answer_relevance": 0.0
+      }
+    },
+    {
+      "id": "EVAL_013",
+      "category": "User Assistance",
+      "question": "How can users access help directly within the application pages if help icons aren't visible?",
+      "expected_behavior": "answer",
+      "status_returned": "success",
+      "judge_scores": {
+        "hit_rate_success": true,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0
+      }
+    },
+    {
+      "id": "EVAL_014",
+      "category": "User Assistance",
+      "question": "What is the official email group address to send feedback regarding Oracle Applications user assistance?",
+      "expected_behavior": "answer",
+      "status_returned": "success",
+      "judge_scores": {
+        "hit_rate_success": true,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0
+      }
+    },
+    {
+      "id": "EVAL_015",
+      "category": "Product Offerings",
+      "question": "What components are delivered as part of the complete Oracle Financials solution?",
+      "expected_behavior": "answer",
+      "status_returned": "success",
+      "judge_scores": {
+        "hit_rate_success": true,
+        "faithfulness": 1.0,
+        "answer_relevance": 1.0
+      }
+    }
+  ]
+}

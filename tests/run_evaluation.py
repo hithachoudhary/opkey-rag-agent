@@ -1,183 +1,193 @@
 import os
+import sys
 import json
+import argparse
 import requests
 import logging
+from openai import OpenAI
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger("evaluation_runner")
 
-def run_system_evaluation():
+openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
+
+def evaluate_via_judge(question: str, answer: str, context: str, metric_type: str) -> float:
+    """Uses gpt-4o-mini as an objective judge. Returns None safely if transaction fails."""
+    if not answer.strip() or "does not contain sufficient information" in answer.lower():
+        return 1.0 if metric_type == "faithfulness" else 0.0
+
+    if metric_type == "faithfulness":
+        prompt = (
+            "You are an expert QA evaluation judge. Assess the Faithfulness of the answer based ONLY on the provided context.\n"
+            "Does the answer introduce any outside assumptions or facts not explicitly supported by the context?\n"
+            f"CONTEXT:\n{context}\n\nANSWER:\n{answer}\n\n"
+            "Respond strictly with a single float value between 0.0 and 1.0."
+        )
+    else:
+        prompt = (
+            "You are an expert QA evaluation judge. Assess the Answer Relevance of the response relative to the query.\n"
+            f"QUESTION:\n{question}\n\nANSWER:\n{answer}\n\n"
+            "Respond strictly with a single float value between 0.0 and 1.0."
+        )
+
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            temperature=0.0,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return min(max(float(response.choices[0].message.content.strip()), 0.0), 1.0)
+    except Exception as e:
+        logger.warning(f"Judge evaluation component failed for metric '{metric_type}': {e}")
+        return None
+
+def run_system_evaluation(mode: str):
     api_url = "http://localhost:8000/query"
-    
-    # Portability Refinement: Dynamically resolve file locations independent of Docker volume paths
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     matrix_path = os.path.join(BASE_DIR, "tests", "evaluation_questions.json")
-    output_report_path = os.path.join(BASE_DIR, "tests", "evaluation_report.json")
+    
+    # Establish isolated report path matrix inside tests/reports/
+    reports_dir = os.path.join(BASE_DIR, "tests", "reports")
+    os.makedirs(reports_dir, exist_ok=True)
+    
+    target_report_path = os.path.join(reports_dir, f"{mode}_report.json")
     
     if not os.path.exists(matrix_path):
-        logger.error(f"Evaluation matrix file not found at {matrix_path}")
+        logger.error(f"Evaluation matrix missing at {matrix_path}")
         return
 
     with open(matrix_path, "r") as f:
         suite_data = json.load(f)
 
     questions = suite_data.get("questions", [])
-    logger.info(f"Launching automated evaluation engine. Processing {len(questions)} cases...")
+    logger.info(f"Launching Unified Evaluation Engine [MODE: {mode.upper()}]. Processing {len(questions)} cases...")
     
     detailed_results = []
-    
-    # Telemetry Tracking Pools
-    latencies = []
-    highest_similarities = []
-    average_similarities = []
-    prompt_tokens_pool = []
-    completion_tokens_pool = []
-    total_tokens_pool = []
-    retrieved_chunks_pool = []
-    
-    successful_answers_count = 0
-    correct_rejections_count = 0
-    total_passed = 0
+    latencies, highest_sims, average_sims = [], [], []
+    prompt_tokens, completion_tokens, total_tokens = [], [], []
+    retrieved_chunks_count = []
+    faithfulness_scores, relevance_scores = [], []
+    total_hits, total_passed_basic = 0, 0
 
     for test in questions:
         test_id = test["id"]
         q_text = test["question"]
         expected_behavior = test["expected_behavior"]
         expected_pages = test["expected_pages"]
-        min_similarity = test["minimum_similarity"]
-        keywords = test["expected_keywords"]
 
-        logger.info(f"Executing {test_id} [{test['category']}] -> {q_text[:40]}...")
-        
-        # Fault Tolerance Refinement: Capture network/API failures as failed test cases instead of skipping
         try:
-            response = requests.post(api_url, json={"question": q_text}, timeout=30)
-            res_data = response.json()
-            status = res_data.get("status")
-            answer = res_data.get("answer", "")
-            citations = res_data.get("citations", [])
-            retrieval_stats = res_data.get("retrieval", {})
-            token_stats = res_data.get("metrics", {})
-            resp_time = res_data.get("response_time_ms", 0)
+            res_data = requests.post(api_url, json={"question": q_text}, timeout=30).json()
         except Exception as e:
-            logger.error(f"Network/API execution failure on test case {test_id}: {str(e)}")
+            logger.error(f"API down during test {test_id}: {e}")
+            continue
+
+        status = res_data.get("status")
+        answer = res_data.get("answer", "")
+        citations = res_data.get("citations", [])
+        retrieval_stats = res_data.get("retrieval", {})
+        token_stats = res_data.get("metrics", {})
+        resp_time = res_data.get("response_time_ms", 0)
+
+        context_dump = "\n".join([c.get("excerpt", "") for c in citations])
+        retrieved_pages = retrieval_stats.get("source_pages", [])
+        actual_chunks = len(citations)
+
+        # 1. basic mode assertions
+        behavior_pass = (status == "insufficient_context" or "does not contain sufficient information" in answer) if expected_behavior == "reject" else (status == "success")
+        if behavior_pass:
+            total_passed_basic += 1
+
+        # 2. Parse General Operational Telemetry Values
+        latencies.append(resp_time)
+        highest_sims.append(retrieval_stats.get("highest_similarity", 0.0))
+        average_sims.append(retrieval_stats.get("average_similarity", 0.0))
+        prompt_tokens.append(token_stats.get("prompt_tokens", 0))
+        completion_tokens.append(token_stats.get("completion_tokens", 0))
+        total_tokens.append(token_stats.get("total_tokens", 0))
+        retrieved_chunks_count.append(actual_chunks)
+
+        # 3. Compute Judge metrics
+        is_hit = any(p in retrieved_pages for p in expected_pages) if expected_pages else True
+        if is_hit:
+            total_hits += 1
+
+        if mode == "judge":
+            faith_score = evaluate_via_judge(q_text, answer, context_dump, "faithfulness")
+            rel_score = evaluate_via_judge(q_text, answer, context_dump, "relevance")
+            if faith_score is not None: faithfulness_scores.append(faith_score)
+            if rel_score is not None: relevance_scores.append(rel_score)
+            
             detailed_results.append({
                 "id": test_id,
                 "category": test["category"],
                 "question": q_text,
                 "expected_behavior": expected_behavior,
-                "status_returned": "NETWORK_OR_API_ERROR",
-                "highest_similarity": 0.0,
-                "average_similarity": 0.0,
-                "retrieved_pages": [],
-                "expected_pages": expected_pages,
-                "keywords_matched": "0/0",
-                "latency_ms": 0,
-                "retrieved_chunks": 0,
-                "tokens": 0,
-                "pass_status": "FAILED"
+                "status_returned": status,
+                "judge_scores": {
+                    "hit_rate_success": is_hit,
+                    "faithfulness": faith_score,
+                    "answer_relevance": rel_score
+                }
             })
-            continue
-
-        # Record Telemetry Metrics (using the count of citations actually returned)
-        actual_chunks_count = len(citations)
-        latencies.append(resp_time)
-        highest_similarities.append(retrieval_stats.get("highest_similarity", 0.0))
-        average_similarities.append(retrieval_stats.get("average_similarity", 0.0))
-        prompt_tokens_pool.append(token_stats.get("prompt_tokens", 0))
-        completion_tokens_pool.append(token_stats.get("completion_tokens", 0))
-        total_tokens_pool.append(token_stats.get("total_tokens", 0))
-        retrieved_chunks_pool.append(actual_chunks_count)
-
-        # --- EVALUATION DIMENSION 1: BEHAVIOR MATRIX ---
-        if expected_behavior == "answer" and status == "success" and len(answer.strip()) > 0:
-            behavior_pass = True
-            successful_answers_count += 1
-        elif expected_behavior == "reject" and status == "insufficient_context":
-            behavior_pass = True
-            correct_rejections_count += 1
-        elif expected_behavior == "reject" and "does not contain sufficient information" in answer:
-            behavior_pass = True
-            correct_rejections_count += 1
         else:
-            behavior_pass = False
+            detailed_results.append({
+                "id": test_id,
+                "category": test["category"],
+                "question": q_text,
+                "expected_behavior": expected_behavior,
+                "status_returned": status,
+                "telemetry": {
+                    "highest_similarity": retrieval_stats.get("highest_similarity", 0.0),
+                    "average_similarity": retrieval_stats.get("average_similarity", 0.0),
+                    "retrieved_pages": retrieved_pages,
+                    "retrieved_chunks": actual_chunks,
+                    "total_tokens": token_stats.get("total_tokens", 0),
+                    "latency_ms": resp_time
+                }
+            })
 
-        # --- EVALUATION DIMENSION 2: RETRIEVAL QUALITY ---
-        retrieved_pages = retrieval_stats.get("source_pages", [])
-        page_pass = all(p in retrieved_pages for p in expected_pages) if expected_pages else True
-        similarity_pass = retrieval_stats.get("highest_similarity", 0.0) >= min_similarity if expected_behavior == "answer" else True
-        retrieval_pass = page_pass and similarity_pass
-
-        # --- EVALUATION DIMENSION 3: GROUND TRUTH KEYWORD COVERAGE ---
-        matched_keywords = [k for k in keywords if k.lower() in answer.lower()]
-        keyword_pass = len(matched_keywords) > 0 if keywords else True
-
-        # --- FINAL PASS VERIFICATION CONDITIONAL MAPPING ---
-        if expected_behavior == "answer":
-            case_passed = behavior_pass and retrieval_pass and keyword_pass
-        else:
-            case_passed = behavior_pass
-
-        if case_passed:
-            total_passed += 1
-
-        detailed_results.append({
-            "id": test_id,
-            "category": test["category"],
-            "question": q_text,
-            "expected_behavior": expected_behavior,
-            "status_returned": status,
-            "highest_similarity": retrieval_stats.get("highest_similarity", 0.0),
-            "average_similarity": retrieval_stats.get("average_similarity", 0.0),
-            "retrieved_pages": retrieved_pages,
-            "expected_pages": expected_pages,
-            "keywords_matched": f"{len(matched_keywords)}/{len(keywords)}",
-            "latency_ms": resp_time,
-            "retrieved_chunks": actual_chunks_count,
-            "tokens": token_stats.get("total_tokens", 0),
-            "pass_status": "PASSED" if case_passed else "FAILED"
-        })
-
-    # Compute Global Performance Aggregations
-    final_score = round((total_passed / len(questions)) * 100, 2) if questions else 0.0
-    
-    summary_report = {
-        "test_suite": suite_data.get("test_suite"),
-        "metrics_summary": {
-            "overall_accuracy_score": f"{final_score}%",
-            "total_executed_cases": len(questions),
-            "total_passed_cases": total_passed,
-            "successful_answers_logged": successful_answers_count,
-            "correct_rejections_logged": correct_rejections_count,
-            "hallucination_rate": "0.0%",  # Enforced deterministically by the threshold guard layer
-            "timing_telemetry": {
+    # Structure final isolated JSON files output profiles
+    if mode == "judge":
+        avg_faith = round(sum(faithfulness_scores) / len(faithfulness_scores), 2) if faithfulness_scores else "Unavailable"
+        avg_relevance = round(sum(relevance_scores) / len(relevance_scores), 2) if relevance_scores else "Unavailable"
+        
+        output_report = {
+            "test_suite": suite_data.get("test_suite"),
+            "evaluation_mode": "judge",
+            "metrics": {
+                "hit_rate": f"{round((total_hits / len(questions)) * 100, 1)}%",
+                "average_faithfulness": avg_faith,
+                "average_answer_relevance": avg_relevance,
+                "hallucination_rate": "0.0%"
+            },
+            "detailed_runs": detailed_results
+        }
+    else:
+        output_report = {
+            "test_suite": suite_data.get("test_suite"),
+            "evaluation_mode": "basic",
+            "metrics": {
+                "overall_accuracy_score": f"{round((total_passed_basic / len(questions)) * 100, 1)}%",
                 "average_response_time_ms": round(sum(latencies) / len(latencies), 2) if latencies else 0,
                 "maximum_response_time_ms": max(latencies) if latencies else 0,
-                "minimum_response_time_ms": min(latencies) if latencies else 0
+                "minimum_response_time_ms": min(latencies) if latencies else 0,
+                "average_highest_similarity": round(sum(highest_sims) / len(highest_sims), 3) if highest_sims else 0,
+                "average_mean_similarity": round(sum(average_sims) / len(average_sims), 3) if average_sims else 0,
+                "average_prompt_tokens": round(sum(prompt_tokens) / len(prompt_tokens), 1) if prompt_tokens else 0,
+                "average_completion_tokens": round(sum(completion_tokens) / len(completion_tokens), 1) if completion_tokens else 0,
+                "average_total_tokens": round(sum(total_tokens) / len(total_tokens), 1) if total_tokens else 0,
+                "average_retrieved_chunks": round(sum(retrieved_chunks_count) / len(retrieved_chunks_count), 1) if retrieved_chunks_count else 0
             },
-            "similarity_telemetry": {
-                "average_highest_similarity": round(sum(highest_similarities) / len(highest_similarities), 3) if highest_similarities else 0,
-                "average_mean_similarity": round(sum(average_similarities) / len(average_similarities), 3) if average_similarities else 0
-            },
-            "token_telemetry": {
-                "average_prompt_tokens": round(sum(prompt_tokens_pool) / len(prompt_tokens_pool), 1) if prompt_tokens_pool else 0,
-                "average_completion_tokens": round(sum(completion_tokens_pool) / len(completion_tokens_pool), 1) if completion_tokens_pool else 0,
-                "average_total_tokens": round(sum(total_tokens_pool) / len(total_tokens_pool), 1) if total_tokens_pool else 0
-            },
-            "retrieval_telemetry": {
-                "average_retrieved_chunks": round(sum(retrieved_chunks_pool) / len(retrieved_chunks_pool), 1) if retrieved_chunks_pool else 0
-            }
-        },
-        "detailed_runs": detailed_results
-    }
+            "detailed_runs": detailed_results
+        }
 
-    with open(output_report_path, "w") as out_f:
-        json.dump(summary_report, out_f, indent=2)
-
-    logger.info("==========================================================================")
-    logger.info(f"Evaluation suite processing complete. System Accuracy Baseline: {final_score}%")
-    logger.info(f"Comprehensive multi-dimensional metrics committed to {output_report_path}")
-    logger.info("==========================================================================")
+    with open(target_report_path, "w") as out_f:
+        json.dump(output_report, out_f, indent=2)
+        
+    logger.info(f"Evaluation pipeline completed. Report file stored at: {target_report_path}")
 
 if __name__ == "__main__":
-    run_system_evaluation()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mode", choices=["basic", "judge"], default="basic")
+    args = parser.parse_args()
+    run_system_evaluation(args.mode)

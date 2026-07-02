@@ -1,0 +1,310 @@
+{
+  "test_suite": "Oracle Fusion Cloud Financials Production Compliance Matrix",
+  "evaluation_mode": "basic",
+  "metrics": {
+    "overall_accuracy_score": "100.0%",
+    "average_response_time_ms": 3941.67,
+    "maximum_response_time_ms": 9597,
+    "minimum_response_time_ms": 371,
+    "average_highest_similarity": 0.566,
+    "average_mean_similarity": 0.509,
+    "average_prompt_tokens": 567.6,
+    "average_completion_tokens": 138.0,
+    "average_total_tokens": 705.6,
+    "average_retrieved_chunks": 3.3
+  },
+  "detailed_runs": [
+    {
+      "id": "EVAL_001",
+      "category": "Definitions",
+      "question": "What is Oracle Financials Cloud?",
+      "expected_behavior": "answer",
+      "status_returned": "success",
+      "telemetry": {
+        "highest_similarity": 0.693,
+        "average_similarity": 0.671,
+        "retrieved_pages": [
+          7,
+          17,
+          18,
+          71
+        ],
+        "retrieved_chunks": 5,
+        "total_tokens": 1055,
+        "latency_ms": 7335
+      }
+    },
+    {
+      "id": "EVAL_002",
+      "category": "Definitions",
+      "question": "What is the Financials Offering?",
+      "expected_behavior": "answer",
+      "status_returned": "success",
+      "telemetry": {
+        "highest_similarity": 0.6676,
+        "average_similarity": 0.484,
+        "retrieved_pages": [
+          13,
+          71
+        ],
+        "retrieved_chunks": 5,
+        "total_tokens": 1074,
+        "latency_ms": 9597
+      }
+    },
+    {
+      "id": "EVAL_003",
+      "category": "Definitions",
+      "question": "What is an implementation project?",
+      "expected_behavior": "reject",
+      "status_returned": "insufficient_context",
+      "telemetry": {
+        "highest_similarity": 0.5537,
+        "average_similarity": 0.518,
+        "retrieved_pages": [
+          73,
+          74,
+          75
+        ],
+        "retrieved_chunks": 0,
+        "total_tokens": 0,
+        "latency_ms": 1854
+      }
+    },
+    {
+      "id": "EVAL_004",
+      "category": "Definitions",
+      "question": "What is ledger configuration?",
+      "expected_behavior": "answer",
+      "status_returned": "success",
+      "telemetry": {
+        "highest_similarity": 0.6154,
+        "average_similarity": 0.588,
+        "retrieved_pages": [
+          20,
+          83,
+          135
+        ],
+        "retrieved_chunks": 5,
+        "total_tokens": 1155,
+        "latency_ms": 5050
+      }
+    },
+    {
+      "id": "EVAL_005",
+      "category": "Definitions",
+      "question": "What is rapid implementation?",
+      "expected_behavior": "answer",
+      "status_returned": "success",
+      "telemetry": {
+        "highest_similarity": 0.6121,
+        "average_similarity": 0.578,
+        "retrieved_pages": [
+          73,
+          74,
+          75,
+          150
+        ],
+        "retrieved_chunks": 5,
+        "total_tokens": 1104,
+        "latency_ms": 5503
+      }
+    },
+    {
+      "id": "EVAL_006",
+      "category": "Summaries",
+      "question": "Summarize Chapter 3.",
+      "expected_behavior": "reject",
+      "status_returned": "insufficient_context",
+      "telemetry": {
+        "highest_similarity": 0.407,
+        "average_similarity": 0.372,
+        "retrieved_pages": [
+          8,
+          87,
+          100,
+          132,
+          168
+        ],
+        "retrieved_chunks": 0,
+        "total_tokens": 0,
+        "latency_ms": 1491
+      }
+    },
+    {
+      "id": "EVAL_007",
+      "category": "Summaries",
+      "question": "Explain the rapid implementation process.",
+      "expected_behavior": "answer",
+      "status_returned": "success",
+      "telemetry": {
+        "highest_similarity": 0.6034,
+        "average_similarity": 0.572,
+        "retrieved_pages": [
+          73,
+          74,
+          75,
+          150
+        ],
+        "retrieved_chunks": 5,
+        "total_tokens": 1226,
+        "latency_ms": 7135
+      }
+    },
+    {
+      "id": "EVAL_008",
+      "category": "Procedural",
+      "question": "How do you create an implementation project?",
+      "expected_behavior": "answer",
+      "status_returned": "success",
+      "telemetry": {
+        "highest_similarity": 0.6125,
+        "average_similarity": 0.531,
+        "retrieved_pages": [
+          73,
+          74,
+          75,
+          150
+        ],
+        "retrieved_chunks": 5,
+        "total_tokens": 1221,
+        "latency_ms": 6555
+      }
+    },
+    {
+      "id": "EVAL_009",
+      "category": "Procedural",
+      "question": "What are the steps involved in rapid implementation?",
+      "expected_behavior": "answer",
+      "status_returned": "success",
+      "telemetry": {
+        "highest_similarity": 0.6283,
+        "average_similarity": 0.593,
+        "retrieved_pages": [
+          73,
+          75,
+          150
+        ],
+        "retrieved_chunks": 5,
+        "total_tokens": 1264,
+        "latency_ms": 7378
+      }
+    },
+    {
+      "id": "EVAL_010",
+      "category": "Comparative",
+      "question": "What is the difference between rapid implementation and complete implementation?",
+      "expected_behavior": "reject",
+      "status_returned": "insufficient_context",
+      "telemetry": {
+        "highest_similarity": 0.5568,
+        "average_similarity": 0.527,
+        "retrieved_pages": [
+          73,
+          74,
+          75
+        ],
+        "retrieved_chunks": 0,
+        "total_tokens": 0,
+        "latency_ms": 864
+      }
+    },
+    {
+      "id": "EVAL_011",
+      "category": "Unsupported",
+      "question": "Who founded Oracle?",
+      "expected_behavior": "reject",
+      "status_returned": "insufficient_context",
+      "telemetry": {
+        "highest_similarity": 0.4358,
+        "average_similarity": 0.419,
+        "retrieved_pages": [
+          5,
+          18,
+          70
+        ],
+        "retrieved_chunks": 0,
+        "total_tokens": 0,
+        "latency_ms": 371
+      }
+    },
+    {
+      "id": "EVAL_012",
+      "category": "Unsupported",
+      "question": "What is Kubernetes?",
+      "expected_behavior": "reject",
+      "status_returned": "insufficient_context",
+      "telemetry": {
+        "highest_similarity": 0.2309,
+        "average_similarity": 0.189,
+        "retrieved_pages": [
+          15,
+          26,
+          56,
+          57,
+          70
+        ],
+        "retrieved_chunks": 0,
+        "total_tokens": 0,
+        "latency_ms": 383
+      }
+    },
+    {
+      "id": "EVAL_013",
+      "category": "User Assistance",
+      "question": "How can users access help directly within the application pages if help icons aren't visible?",
+      "expected_behavior": "answer",
+      "status_returned": "success",
+      "telemetry": {
+        "highest_similarity": 0.6109,
+        "average_similarity": 0.472,
+        "retrieved_pages": [
+          5,
+          9,
+          11,
+          13
+        ],
+        "retrieved_chunks": 5,
+        "total_tokens": 686,
+        "latency_ms": 1697
+      }
+    },
+    {
+      "id": "EVAL_014",
+      "category": "User Assistance",
+      "question": "What is the official email group address to send feedback regarding Oracle Applications user assistance?",
+      "expected_behavior": "answer",
+      "status_returned": "success",
+      "telemetry": {
+        "highest_similarity": 0.6352,
+        "average_similarity": 0.538,
+        "retrieved_pages": [
+          5,
+          117
+        ],
+        "retrieved_chunks": 5,
+        "total_tokens": 839,
+        "latency_ms": 1393
+      }
+    },
+    {
+      "id": "EVAL_015",
+      "category": "Product Offerings",
+      "question": "What components are delivered as part of the complete Oracle Financials solution?",
+      "expected_behavior": "answer",
+      "status_returned": "success",
+      "telemetry": {
+        "highest_similarity": 0.6222,
+        "average_similarity": 0.588,
+        "retrieved_pages": [
+          7,
+          15,
+          71
+        ],
+        "retrieved_chunks": 5,
+        "total_tokens": 960,
+        "latency_ms": 2519
+      }
+    }
+  ]
+}

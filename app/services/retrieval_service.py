@@ -5,7 +5,6 @@ logger = logging.getLogger("opkey_agent_api")
 
 class RetrievalService:
     def get_relevance_label(self, score: float) -> str:
-        """Maps a mathematical similarity score to an intuitive presentation label."""
         if score >= 0.80:
             return "Very High"
         elif score >= 0.70:
@@ -16,8 +15,8 @@ class RetrievalService:
 
     def retrieve_context(self, query: str, top_k: int = 5) -> dict:
         """
-        Queries ChromaDB for the top K most relevant text segments,
-        calculating metrics optimized for downstream consumption.
+        Queries ChromaDB for the top K most relevant text segments across 
+        all dynamically indexed multi-tenant enterprise manuals.
         """
         try:
             logger.info(f"Querying vector store for: '{query}' with top_k={top_k}")
@@ -27,7 +26,6 @@ class RetrievalService:
             )
             
             if not results or not results.get("documents") or not results["documents"][0]:
-                logger.warning("No relevant matching vectors discovered in the collection.")
                 return {
                     "context_string": "",
                     "source_chunks": [],
@@ -65,15 +63,18 @@ class RetrievalService:
                 chunk_id = meta.get("chunk_id")
                 retrieved_chunk_ids.append(chunk_id)
                 
+                # REFINEMENT: Pull the dynamic structural document source mapping
+                doc_origin = meta.get("filename") or meta.get("source") or "unknown_document"
+                
                 citations.append({
                     "page": page_num,
+                    "document_name": doc_origin,  # Added tracking value
                     "score": score,
                     "relevance": self.get_relevance_label(score),
                     "chunk_id": chunk_id,
                     "excerpt": retrieved_texts[idx].strip()
                 })
                 
-            # Keep ranked strictly by descending similarity score
             citations = sorted(citations, key=lambda x: x["score"], reverse=True)
             
             highest = max(scores) if scores else 0.0
