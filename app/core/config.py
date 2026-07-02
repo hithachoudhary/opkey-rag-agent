@@ -1,9 +1,14 @@
 import os
 
 class Settings:
-    # Read straight from environment variables with safe fallbacks
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     CHROMA_DB_PATH: str = "/workspace/chroma_db"
-    COLLECTION_NAME: str = "oracle_financials_collection"
+    COLLECTION_NAME: str = "oracle_financials_production_collection"
+    
+    EMBEDDING_MODEL: str = "text-embedding-3-small"
+    LLM_MODEL: str = "gpt-4o-mini"
+    
+    @property
+    def OPENAI_API_KEY(self) -> str:
+        return os.getenv("OPENAI_API_KEY", "")
 
 settings = Settings()

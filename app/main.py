@@ -1,38 +1,65 @@
+import time
+import logging
 from fastapi import FastAPI
 from pydantic import BaseModel
-import fitz
 from app.services.pdf_service import pdf_service
 from app.services.chunking_service import chunking_service
 from app.services.embedding_service import embedding_service
 from app.services.retrieval_service import retrieval_service
 from app.services.llm_service import llm_service
 from app.db.chroma import chroma_client
+from app.core.config import settings
 
-# Initialize the FastAPI App
-app = FastAPI(title="Opkey RAG Agent API", version="2.0.0")
+# Setup unified terminal logging tracking format
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger("opkey_agent_api")
 
-# Request validation schema for downstream execution
+# Initialize the FastAPI App with formal configuration metadata
+app = FastAPI(
+    title="Opkey Enterprise RAG Agent API",
+    version="2.0.0",
+    description="Production-grade Retrieval-Augmented Generation engine for enterprise document analysis."
+)
+
 class QueryRequest(BaseModel):
     question: str
 
 
-@app.post("/ingest-full-guide")
-def ingest_full_guide():
+@app.get("/health", tags=["System Diagnostics"])
+def health_check():
+    """
+    Evaluates system operational readiness and active resource state.
+    """
+    try:
+        current_chunks = chroma_client.get_count()
+        return {
+            "status": "healthy",
+            "embedding_model": settings.EMBEDDING_MODEL,
+            "llm": settings.LLM_MODEL,
+            "indexed_chunks": current_chunks,
+            "collection": settings.COLLECTION_NAME
+        }
+    except Exception as e:
+        logger.error(f"Health checkpoint failure: {str(e)}")
+        return {"status": "unhealthy", "error": str(e)}
+
+
+@app.post("/ingest", tags=["Document Ingestion Pipeline"])
+def ingest_document(force_rebuild: bool = False):
     """
     Data Engineering Pipeline:
-    1. Extracts raw text from the source PDF.
-    2. Applies layout noise filters (wiping Cover pages, TOC, and legal sections).
-    3. Slices text blocks using sentence-based recursive chunking.
-    4. Registers chunks and metadata structural payloads into ChromaDB.
+    1. Extracts raw text from the enterprise PDF file repository.
+    2. Filters structural layout noise, tables of contents, and boilerplate data.
+    3. Segments raw text strings into sentence-bounded overlapping semantic windows.
+    4. Automatically generates embeddings and updates the persistent vector storage index.
     """
+    start_time = time.perf_counter()
     try:
         file_path = "/workspace/data/oracle_financials_implementation_guide.pdf"
         filename = "oracle_financials_implementation_guide.pdf"
         
-        # 1. Read manual pages and apply layout noise filters
         filtered_pages = pdf_service.extract_text_by_page(file_path)
         
-        # 2. Chunk text blocks using sentence boundary alignment rules
         all_document_chunks = []
         for page in filtered_pages:
             chunks = chunking_service.split_text_into_chunks(
@@ -42,59 +69,102 @@ def ingest_full_guide():
             )
             all_document_chunks.extend(chunks)
             
-        # 3. Attempt database ingestion through our interface wrapper
-        ingest_result = embedding_service.index_chunks(all_document_chunks)
+        ingest_result = embedding_service.index_chunks(
+            chunks=all_document_chunks, 
+            force_rebuild=force_rebuild
+        )
+        
+        execution_duration = round((time.perf_counter() - start_time) * 1000)
         
         return {
             "status": "processed",
-            "total_pages_retained": len(filtered_pages),
-            "total_chunks_generated": len(all_document_chunks),
+            "response_time_ms": execution_duration,
+            "pipeline_metrics": {
+                "total_pages_retained": len(filtered_pages),
+                "total_chunks_generated": len(all_document_chunks)
+            },
             "database_ingestion_layer": ingest_result
         }
     except Exception as e:
+        logger.error(f"Pipeline failure during ingestion: {str(e)}")
         return {"status": "error", "message": str(e)}
 
 
-@app.post("/query")
+@app.post("/query", tags=["Conversational RAG Execution"])
 def query_agent(payload: QueryRequest):
     """
-    RAG Orchestration Workflow:
-    1. Accepts a natural language question.
-    2. Retrieves contextually relevant chunks from ChromaDB (with dynamic catch fallbacks).
-    3. Builds an isolation prompt binding system guards and manual facts.
-    4. Prepares the generative response along with citations and metrics trackers.
+    Orchestrated RAG Execution Loop with Context Threshold Guards.
     """
+    start_time = time.perf_counter()
     try:
-        # 1. Fetch relevant factual contexts from the vector storage system
-        context_data = retrieval_service.retrieve_context(query=payload.question)
+        logger.info(f"Processing context-grounded agent query: {payload.question}")
         
-        # 2. Feed context and question to the LLM module to generate the validated response
+        # 1. Fetch relevant factual contexts from the vector storage system
+        context_data = retrieval_service.retrieve_context(query=payload.question, top_k=5)
+        retrieval_stats = context_data["summary"]
+        
+        confidence_label = retrieval_stats.pop("retrieval_confidence")
+        
+        # 2. Threshold Guard check to stop weak context processing immediately
+        if retrieval_stats["highest_similarity"] < retrieval_stats["threshold"]:
+            execution_duration = round((time.perf_counter() - start_time) * 1000)
+            logger.info("Context Guard Triggered: Insufficient similarity proximity.")
+            return {
+                "status": "insufficient_context",
+                "response_time_ms": execution_duration,
+                "answer": "The provided Oracle documentation does not contain sufficient information to answer this question.",
+                "confidence": {"retrieval": "Low"},
+                "retrieval": retrieval_stats,
+                "citations": [],
+                "metrics": {
+                    "embedding_model": settings.EMBEDDING_MODEL,
+                    "llm": settings.LLM_MODEL,
+                    "prompt_tokens": 0,
+                    "completion_tokens": 0,
+                    "total_tokens": 0
+                }
+            }
+        
+        # 3. Generate data-grounded contextual response block
         result = llm_service.generate_answer(
             question=payload.question, 
             context_data=context_data
         )
         
+        # Append referenced citation footer explicitly to response string
+        page_list_str = ", ".join(map(str, retrieval_stats["source_pages"]))
+        final_answer = f"{result['generated_answer']}\n\n---\n**Referenced Documentation Pages:** {page_list_str}"
+        
+        execution_duration = round((time.perf_counter() - start_time) * 1000)
+        logger.info(f"Query sequence resolved in {execution_duration} ms.")
+        
+        telemetry_metrics = result["token_metrics"]
+        telemetry_metrics["embedding_model"] = settings.EMBEDDING_MODEL
+        telemetry_metrics["llm"] = settings.LLM_MODEL
+        
         return {
             "status": "success",
-            "query_executed": payload.question,
-            "response": result["generated_answer"],
-            "citations": result["sources_used"],
-            "metrics": {
-                "estimated_prompt_tokens": result["tokens_estimated"]
-            }
+            "response_time_ms": execution_duration,
+            "answer": final_answer,
+            "confidence": {
+                "retrieval": confidence_label
+            },
+            "retrieval": retrieval_stats,
+            "citations": context_data["source_chunks"],
+            "metrics": telemetry_metrics
         }
     except Exception as e:
+        logger.error(f"Execution tracking exception during query lifecycle: {str(e)}")
         return {"status": "error", "message": str(e)}
 
 
-@app.get("/test-chunks")
-def test_chunks():
+@app.get("/debug/chunks/sample", tags=["System Diagnostics"])
+def debug_chunk_segmentation():
     """
-    Isolated Diagnostic Route:
-    Target Page 7 directly to easily evaluate sentence-overlap boundaries, 
-    bullet layout preservation, and regex noise performance.
+    Comprehensive Diagnostic Extraction Summary Route.
     """
     try:
+        import fitz
         file_path = "/workspace/data/oracle_financials_implementation_guide.pdf"
         doc = fitz.open(file_path)
         
@@ -107,12 +177,22 @@ def test_chunks():
             page_number=target_page_num
         )
         
+        debug_output = []
+        for c in processed_chunks:
+            debug_output.append({
+                "page": c["metadata"]["page_number"],
+                "chunk_id": c["metadata"]["chunk_id"],
+                "characters": c["metadata"]["character_metrics"],
+                "estimated_tokens": c["metadata"]["estimated_tokens"],
+                "chunk_preview": c["text"][:150] + "..."
+            })
+            
         return {
             "status": "success",
             "target_page_evaluated": target_page_num,
-            "chunks_generated": len(processed_chunks),
-            "sample_chunks": processed_chunks
+            "total_chunks_discovered": len(debug_output),
+            "diagnostics": debug_output
         }
     except Exception as e:
+        logger.error(f"Diagnostic extraction routine failure: {str(e)}")
         return {"status": "error", "message": str(e)}
-    
