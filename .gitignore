@@ -1,5 +1,33 @@
+# --- Environment Variables & Secrets ---
 .env
+*.env
+secret_keys.txt
+
+# --- Python Runtime Caches ---
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 .pytest_cache/
-chroma_db/
+.mypy_cache/
+.ruff_cache/
+
+# --- Operating System Junk ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# --- Docker & Local Data ---
+.docker/
+# Ignore local database dumps if Chroma ever creates them locally
+*.db
+*.sqlite
+
+# --- IDE & Editor Configs ---
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp

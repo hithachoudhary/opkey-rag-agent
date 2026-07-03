@@ -1,11 +1,13 @@
 version: '3.8'
 
 services:
-  api:
+  opkey_agent_api:
     build: .
     container_name: opkey_agent_api
+    # ... keep your existing environment or volumes keys completely unchanged ...
     ports:
-      - "${PORT:-8000}:8000"
+      - "8000:8000" # This is your FastAPI backend endpoint
+      - "7860:7860" # Gradio UI web page
     volumes:
       - .:/workspace
       - chroma_data:/workspace/chroma_db
