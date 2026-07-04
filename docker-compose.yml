@@ -7,7 +7,7 @@ services:
     # ... keep your existing environment or volumes keys completely unchanged ...
     ports:
       - "8000:8000" # This is your FastAPI backend endpoint
-      - "7860:7860" # Gradio UI web page
+      - "7865:7860" # Gradio UI web page
     volumes:
       - .:/workspace
       - chroma_data:/workspace/chroma_db

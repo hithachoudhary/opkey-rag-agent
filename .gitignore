@@ -1,9 +1,9 @@
-# --- Environment Variables & Secrets ---
+#Environment Variables & Secrets
 .env
 *.env
 secret_keys.txt
 
-# --- Python Runtime Caches ---
+#Python Runtime Caches
 __pycache__/
 *.pyc
 *.pyo
@@ -12,18 +12,18 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 
-# --- Operating System Junk ---
+#Operating System Junk
 .DS_Store
 Thumbs.db
 Desktop.ini
 
-# --- Docker & Local Data ---
+#Docker & Local Data
 .docker/
 # Ignore local database dumps if Chroma ever creates them locally
 *.db
 *.sqlite
 
-# --- IDE & Editor Configs ---
+#IDE & Editor Configs
 .vscode/
 .idea/
 *.suo

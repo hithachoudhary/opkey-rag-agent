@@ -31,9 +31,11 @@ app = FastAPI(
 
 class QueryRequest(BaseModel):
     question: str
+    top_k: int = 5  # Contract addition: Dynamically configurable with a safe default
 
-
+# =========================================================================
 # 1. SYSTEM DIAGNOSTICS & TELEMETRY ENDPOINTS
+# =========================================================================
 
 @app.get("/health", tags=["System Diagnostics"])
 def health_check():
@@ -52,7 +54,6 @@ def health_check():
     except Exception as e:
         logger.error(f"Health checkpoint telemetry failure: {str(e)}")
         return {"status": "unhealthy", "error": str(e)}
-
 
 @app.get("/evaluate", tags=["System Diagnostics"])
 def get_evaluation_metrics(mode: str = Query("basic", enum=["basic", "judge"], description="Select target evaluation view report profile rules.")):
@@ -87,7 +88,9 @@ def get_evaluation_metrics(mode: str = Query("basic", enum=["basic", "judge"], d
         logger.error(f"Failed to read evaluation asset payload: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# =========================================================================
 # 2. DOCUMENT LIFECYCLE MANAGEMENT ENDPOINTS
+# =========================================================================
 
 @app.post("/ingest", tags=["Document Ingestion Pipeline"])
 async def ingest_document(
@@ -106,8 +109,64 @@ async def ingest_document(
         with open(temp_file_path, "wb") as f:
             f.write(contents)
             
-        # Extract clean, page-bounded string data from PDF structure
-        filtered_pages = pdf_service.extract_text_by_page(temp_file_path)
+        # Extract clean, page-bounded string data from PDF structure using standard tracking
+        try:
+            filtered_pages = pdf_service.extract_text_by_page(temp_file_path)
+        except Exception as ex:
+            logger.warning(f"Primary PDF extraction service raised an exception: {str(ex)}")
+            filtered_pages = []
+        
+        # --- GENERIC PDF EXTRACTION FALLBACK ---
+        if not filtered_pages:
+            logger.info(
+                "Primary PDF extraction returned zero pages. "
+                "Activating generic PyMuPDF extraction."
+            )
+
+            import fitz
+
+            doc = fitz.open(temp_file_path)
+
+            logger.info(
+                f"Uploaded PDF diagnostics: "
+                f"pages={doc.page_count}, "
+                f"encrypted={doc.is_encrypted}, "
+                f"needs_pass={doc.needs_pass}"
+            )
+
+            for page_idx in range(doc.page_count):
+                page = doc.load_page(page_idx)
+
+                page_text = page.get_text("text", sort=True).strip()
+
+                logger.info(
+                    f"PDF page {page_idx + 1}: "
+                    f"extracted_characters={len(page_text)}"
+                )
+
+                if page_text:
+                    filtered_pages.append({
+                        "page_number": page_idx + 1,
+                        "text": page_text
+                    })
+
+            doc.close()
+
+            logger.info(
+                f"Generic PDF extraction retained "
+                f"{len(filtered_pages)} readable pages."
+            )
+
+        if not filtered_pages:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "The uploaded PDF contains no extractable text. "
+                    "The document may be scanned, image-based, encrypted, "
+                    "or use an unsupported text encoding."
+                )
+            )
+        # ---------------------------------------
         
         all_document_chunks = []
         for page in filtered_pages:
@@ -116,6 +175,14 @@ async def ingest_document(
                 filename=file.filename,
                 page_number=page["page_number"]
             )
+            
+            # Ensure metadata uniformity across both processing models
+            for chunk in chunks:
+                if "metadata" not in chunk:
+                    chunk["metadata"] = {}
+                chunk["metadata"]["filename"] = file.filename
+                chunk["metadata"]["source"] = file.filename
+                
             all_document_chunks.extend(chunks)
             
         ingest_result = embedding_service.index_chunks(
@@ -135,6 +202,9 @@ async def ingest_document(
             },
             "database_ingestion_layer": ingest_result
         }
+    except HTTPException as he:
+        # Pass HTTPExceptions out cleanly to preserve correct status codes (like 422)
+        raise he
     except Exception as e:
         logger.error(f"Pipeline dynamic ingestion failure: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Ingestion pipeline failure: {str(e)}")
@@ -142,7 +212,6 @@ async def ingest_document(
         # Sweeper step to verify scratch memory bounds are kept clear
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
-
 
 @app.get("/documents", tags=["Document Lifecycle Management"])
 def list_documents():
@@ -185,7 +254,6 @@ def list_documents():
         logger.error(f"Failed to compile document registry profile: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
 @app.delete("/documents/{document_name:path}", tags=["Document Lifecycle Management"])
 def delete_document(document_name: str):
     """
@@ -213,7 +281,6 @@ def delete_document(document_name: str):
         logger.error(f"Exception encountered during delete collection sweep: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-
 # =========================================================================
 # 3. SEMANTIC QUERY PROCESSING ENGINE
 # =========================================================================
@@ -227,8 +294,8 @@ def query_agent(payload: QueryRequest):
     try:
         logger.info(f"Processing agent execution path for statement: {payload.question}")
         
-        # 1. Query vector architecture for candidate reference chunks
-        context_data = retrieval_service.retrieve_context(query=payload.question, top_k=5)
+        # 1. Query vector engine using dynamic payload.top_k constraint
+        context_data = retrieval_service.retrieve_context(query=payload.question, top_k=payload.top_k)
         retrieval_stats = context_data["summary"]
         
         confidence_label = retrieval_stats.pop("retrieval_confidence")
@@ -237,10 +304,11 @@ def query_agent(payload: QueryRequest):
         if retrieval_stats["highest_similarity"] < retrieval_stats["threshold"]:
             execution_duration = round((time.perf_counter() - start_time) * 1000)
             logger.info("Context Guard Triggered: Insufficient similarity proximity.")
+            
             return {
                 "status": "insufficient_context",
                 "response_time_ms": execution_duration,
-                "answer": "The provided Oracle documentation does not contain sufficient information to answer this question.",
+                "answer": "Insufficient context available in the indexed corporate documentation framework to answer this question accurately.",
                 "confidence": {"retrieval": "Low"},
                 "retrieval": retrieval_stats,
                 "citations": [],
@@ -284,7 +352,6 @@ def query_agent(payload: QueryRequest):
     except Exception as e:
         logger.error(f"Execution tracking exception during query lifecycle: {str(e)}")
         return {"status": "error", "message": str(e)}
-
 
 # =========================================================================
 # 4. DIAGNOSTIC DEBUG ENDPOINTS
