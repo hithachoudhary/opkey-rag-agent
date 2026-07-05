@@ -1,7 +1,7 @@
 # Opkey Enterprise RAG Agent
 A Dockerized, context-grounded Retrieval-Augmented Generation (RAG)
 assistant for enterprise ERP documentation. The application ingests
-text-based PDF/TXT documents, creates sentence-aware chunks, generates
+text-based PDF documents, creates sentence-aware chunks, generates
 OpenAI embeddings, stores vectors and metadata in ChromaDB, retrieves
 relevant context, and uses GPT-4o-mini to generate grounded answers with
 source citations.
@@ -12,7 +12,7 @@ The agent answers implementation and configuration questions from
 indexed enterprise documentation rather than unrestricted model
 knowledge. A similarity-based context guard rejects low-confidence
 queries before generation, reducing unsupported answers.
-The primary knowledge source is **Oracle Fusion Cloud Financials — Getting Started with Your Financials Implementation.**     
+The primary knowledge source is **Oracle Fusion Cloud Financials - Getting Started with Your Financials Implementation.**     
 I selected this guide because Oracle Financials is a complex enterprise ERP domain
 aligned with Opkey's ecosystem. It contains implementation procedures,
 configuration workflows, financial setup concepts, and domain-specific
@@ -87,7 +87,7 @@ Verify:
 curl http://localhost:8000/health
 ```
 Swagger UI: `http://localhost:8000/docs`
-Gradio UI: `http://localhost:7860`
+Gradio UI: `http://localhost:7865 or http://127.0.0.1:7865`
 
 ## 4. API Endpoint Reference
 
@@ -255,7 +255,7 @@ curl "http://localhost:8000/evaluate?mode=judge"
 ## 5. Design Decisions
 
 ### 5.1 Document Selection
-The primary document is the **Oracle Fusion Cloud Financials — Getting Started with Your Financials Implementation** guide.
+The primary document is the **Oracle Fusion Cloud Financials - Getting Started with Your Financials Implementation** guide.
 It represents a realistic enterprise ERP domain aligned with Opkey's
 ecosystem and contains implementation procedures, setup workflows,
 financial configuration concepts, and product-specific terminology.
@@ -269,7 +269,7 @@ The system uses **sentence-aware bounded chunking** rather than
 arbitrary fixed-character slicing.
 Text is extracted page by page and segmented while attempting to
 preserve sentence boundaries. The current chunking configuration targets
-approximately **1,000 characters per chunk with overlap**. Each chunk
+approximately **750 characters per chunk with structural overlap by carrying the previous two semantic units into the next chunk**. Each chunk
 retains source filename, page number, and chunk metadata.
 This balances retrieval precision, procedural context preservation,
 reduced mid-sentence fragmentation, and manageable LLM token usage.
