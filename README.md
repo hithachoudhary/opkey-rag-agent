@@ -484,7 +484,7 @@ curl "http://localhost:8000/evaluate?mode=judge"
 ```
 
 ## 11. Demo Video
-**Demo video:** `ADD_DEMO_VIDEO_LINK_HERE`  
+**Demo video:** `(https://drive.google.com/file/d/1oMyNKCSeK9eSoK7e4OPGzFtiVuP6ss9P/view?usp=sharing)  
 The demo should show Docker Compose starting from scratch, document
 ingestion, 3-4 live queries with source citations, document
 listing/deletion, project structure, and one key design decision.
