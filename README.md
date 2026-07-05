@@ -86,8 +86,71 @@ Verify:
 ``` bash
 curl http://localhost:8000/health
 ```
-Swagger UI: `http://localhost:8000/docs`
-Gradio UI: `http://localhost:7865 or http://127.0.0.1:7865`
+
+### Build and Start the Cluster Lifecycle
+
+```bash
+# 4. Build the application environment and start the backend service
+docker compose up --build
+```
+
+The FastAPI backend is available once the Uvicorn server reports that it is running on port `8000`.
+
+---
+
+### Initialize the Frontend Web Dashboard
+
+After the backend service is running, open a **second terminal window** and start the Gradio frontend inside the active Docker container.
+
+This method runs the frontend within the existing container environment and does not require Python, Gradio, or other project dependencies to be installed separately on the host machine.
+
+```bash
+docker exec -d opkey_agent_api python /workspace/app/frontend.py
+```
+
+The Gradio frontend communicates directly with the FastAPI REST backend and provides a user-facing interface for:
+
+- Submitting natural-language queries to the RAG agent
+- Viewing context-grounded answers
+- Inspecting retrieval confidence and similarity telemetry
+- Reviewing page-level source citations and retrieved excerpts
+- Ingesting enterprise documents
+- Viewing and deleting indexed documents
+- Inspecting Basic and LLM-as-Judge evaluation reports
+- Monitoring backend system health
+
+---
+
+### Verification Entry Points
+
+Once the backend and frontend services are running, verify the deployment using the following entry points:
+
+| Service | Entry Point |
+|---|---|
+| FastAPI Health Check | `http://localhost:8000/health` |
+| Swagger / OpenAPI Documentation | `http://localhost:8000/docs` |
+| Gradio Web Dashboard | `http://localhost:7865` |
+
+Verify the backend health from the terminal:
+
+```bash
+curl http://localhost:8000/health
+```
+
+A successful deployment returns a response similar to:
+
+```json
+{
+  "status": "healthy",
+  "embedding_model": "text-embedding-3-small",
+  "llm": "gpt-4o-mini",
+  "indexed_chunks": 744,
+  "collection": "oracle_financials_production_collection"
+}
+```
+
+The complete RAG system can then be accessed through the FastAPI REST endpoints using Swagger or through the Gradio web dashboard.
+
 
 ## 4. API Endpoint Reference
 
